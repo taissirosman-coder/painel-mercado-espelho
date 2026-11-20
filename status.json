@@ -1,0 +1,29 @@
+{
+  "at": "2026-11-20T22:20:59.615Z",
+  "ok": true,
+  "seconds": 3,
+  "tickers": 94,
+  "yahooOk": 93,
+  "yahooErrors": 0,
+  "si": {
+    "ok": false,
+    "src": "retrato",
+    "msg": "HTTP 403 · HTTP 403 · HTTP 403 · usando retrato de 2026-11-19"
+  },
+  "tv": {
+    "ok": true
+  },
+  "entrada": {
+    "ok": true,
+    "at": "2026-11-19T13:14:40.771Z",
+    "n": 94,
+    "si": true
+  },
+  "strip": {
+    "IBOV": true,
+    "IFIX": true,
+    "USD": true,
+    "SPX": true
+  },
+  "bytes": 222330
+}

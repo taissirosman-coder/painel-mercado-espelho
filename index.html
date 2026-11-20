@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Painel">
+<meta name="theme-color" content="#1b1f2c">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Painel de Mercado</title>
+<style>
+:root {
+  --font: -apple-system, system-ui, 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+  color-scheme: dark;
+  --bg: #1b1f2c; --panel: #232838; --panel-2: #2a3043; --line: #343a50;
+  --text: #eceef3; --text-2: #b7bccb; --muted: #8b92a6; --accent: #fab47a; --accent-ink: #1b1f2c;
+  --up: #4cc38a; --down: #f07272; --warn: #f2b84b; --err: #f07272;
+}
+@media (prefers-color-scheme: light) {
+  :root { color-scheme: light; --bg: #f6f7f9; --panel: #fff; --panel-2: #f1f2f5; --line: #e6e7ea;
+    --text: #22263a; --text-2: #4a5064; --muted: #6b7184; --accent: #343a50; --accent-ink: #fff;
+    --up: #0b7a43; --down: #c2312f; --warn: #b7791f; --err: #c2312f; }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; } /* o display dos blocos não pode anular o hidden */
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.35 var(--font); -webkit-text-size-adjust: 100%; }
+body { padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 16px); }
+button { font: inherit; color: inherit; }
+.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.up { color: var(--up); } .down { color: var(--down); } .muted { color: var(--muted); }
+
+/* tela de senha */
+#lock { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+#lock form { width: 100%; max-width: 360px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+#lock h1 { font-size: 20px; margin: 0 0 6px; }
+#lock p { margin: 0 0 16px; color: var(--text-2); font-size: 14px; }
+#lock input { width: 100%; font: inherit; font-size: 16px; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); }
+#lock button { width: 100%; margin-top: 12px; padding: 12px; border: 0; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 16px; }
+#lock .err { color: var(--err); font-size: 14px; min-height: 20px; margin-top: 10px; }
+#lock .err.wait { color: var(--muted); }
+
+/* topo */
+header { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 10px 14px 6px; border-bottom: 1px solid var(--line); }
+.top { display: flex; align-items: center; gap: 10px; }
+.top h1 { font-size: 17px; margin: 0; flex: 1; }
+.top .reload { border: 1px solid var(--line); background: var(--panel); border-radius: 9px; padding: 6px 10px; }
+.when { font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
+.when b { color: var(--text); font-weight: 600; }
+.banner { margin: 8px 14px 0; padding: 8px 10px; border-radius: 9px; background: rgba(242, 184, 75, .14); color: var(--warn); font-size: 13px; }
+.strip { display: flex; gap: 8px; overflow-x: auto; padding: 10px 14px 4px; scrollbar-width: none; }
+.strip::-webkit-scrollbar, .scroll::-webkit-scrollbar { display: none; }
+.strip div { flex: 0 0 auto; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 6px 10px; font-size: 12.5px; }
+.strip span { color: var(--muted); margin-right: 6px; }
+.scroll { display: flex; gap: 6px; overflow-x: auto; padding: 8px 14px 0; scrollbar-width: none; }
+.chip { flex: 0 0 auto; border: 1px solid var(--line); background: var(--panel); color: var(--text-2); border-radius: 99px; padding: 6px 12px; font-size: 13.5px; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.chip small { opacity: .7; margin-left: 4px; }
+.row2 { display: flex; gap: 8px; padding: 8px 14px 0; align-items: center; }
+.row2 input { flex: 1; min-width: 0; font: inherit; font-size: 16px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--text); }
+.row2 select { font: inherit; font-size: 14px; padding: 8px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--text); }
+
+/* lista */
+.cols, .r { display: grid; grid-template-columns: minmax(0, 1fr) 76px 66px 72px; gap: 6px; align-items: center; }
+.cols { padding: 10px 14px 4px; font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .02em; }
+.g { padding: 9px 14px; font-size: 12.5px; font-weight: 600; color: var(--text-2); background: var(--panel-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.g .n { color: var(--muted); font-weight: 500; margin-left: 6px; }
+.item { border-bottom: 1px solid var(--line); }
+.r { padding: 10px 14px; background: none; border: 0; width: 100%; text-align: left; }
+.r b { font-size: 15px; }
+.r .nm { display: block; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag { font-size: 10.5px; font-weight: 600; border: 1px solid var(--line); border-radius: 5px; padding: 0 4px; margin-left: 5px; color: var(--text-2); vertical-align: 2px; }
+.fl { font-size: 11px; margin-left: 4px; color: var(--warn); }
+.fl.err { color: var(--err); }
+.tvm { font-size: 9px; font-weight: 600; margin-left: 3px; padding: 0 2px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); vertical-align: 1px; }
+.det { display: none; padding: 2px 14px 14px; }
+.item.open .det { display: block; }
+.vars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.vars div { background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 7px 6px; text-align: center; }
+.vars span { display: block; font-size: 11px; color: var(--muted); }
+.vars b { display: block; font-size: 14px; font-variant-numeric: tabular-nums; }
+.vars small { display: block; font-size: 10.5px; color: var(--muted); }
+.mults { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; }
+.mults div { background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 7px 8px; }
+.mults span { display: block; font-size: 11px; color: var(--muted); }
+.mults b { font-size: 14px; font-variant-numeric: tabular-nums; }
+.mults small { display: block; font-size: 10.5px; color: var(--muted); }
+.notes { margin: 8px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--text-2); }
+.notes li { margin: 3px 0; }
+.notes .w { color: var(--warn); }
+.empty { padding: 30px 14px; text-align: center; color: var(--muted); }
+footer { padding: 16px 14px 0; font-size: 12px; color: var(--muted); }
+footer button { border: 0; background: none; color: var(--text-2); text-decoration: underline; padding: 0; font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="lock" hidden>
+  <form id="lock-form" autocomplete="on">
+    <h1>Painel de Mercado</h1>
+    <p>Digite a senha do espelho. Ela fica guardada só neste aparelho.</p>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Senha" required>
+    <button type="submit">Abrir</button>
+    <div class="err" id="lock-err"></div>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <header>
+    <div class="top"><h1>Painel de Mercado</h1><button class="reload" id="reload" aria-label="Recarregar">↻</button></div>
+    <div class="when" id="when"></div>
+  </header>
+  <div id="banner"></div>
+  <div class="strip" id="strip"></div>
+  <div class="scroll" id="tabs" role="tablist"></div>
+  <div class="scroll" id="periods" aria-label="Período da última coluna"></div>
+  <div class="row2">
+    <input id="filter" type="search" placeholder="Filtrar" autocomplete="off" autocapitalize="characters">
+    <select id="mode" aria-label="Tipo de variação"><option value="price">Preço</option><option value="tr">Retorno total</option></select>
+    <select id="group" aria-label="Agrupar por"><option value="sec">Setor</option><option value="sub">Subsetor</option><option value="seg">Segmento</option><option value="none">Sem grupo</option></select>
+  </div>
+  <div class="cols"><span>Ativo</span><span class="num">Preço</span><span class="num">Dia</span><span class="num" id="col-per"></span></div>
+  <main id="list"></main>
+  <footer>
+    Espelho somente leitura, gerado a cada 30 min no pregão (GitHub Actions) com o mesmo cálculo da extensão. Fontes: Yahoo (~15 min de atraso), TradingView e retrato do Status Invest (classificação B3 e múltiplos) <span id="snap-date"></span>. Uso pessoal, não é recomendação.<br><br>
+    <button id="forget">Esquecer a senha neste aparelho</button>
+  </footer>
+</div>
+
+<script type="module">
+import * as C from './js/calc.js';
+import * as F from './js/fmt.js';
+
+const $ = s => document.querySelector(s);
+const KEY_STORE = 'espelho-chave-v1';
+const PREF_STORE = 'espelho-pref-v1';
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch { /* modo privado */ } },
+  del(k) { try { localStorage.removeItem(k); } catch { /* idem */ } },
+};
+const pref = Object.assign({ tab: 'todos', per: 'y1', mode: 'price', group: 'sec' }, JSON.parse(store.get(PREF_STORE) || '{}'));
+const savePref = () => store.set(PREF_STORE, JSON.stringify(pref));
+
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const toB64 = u8 => btoa(String.fromCharCode(...u8));
+let envelope = null, data = null, open = new Set(), filter = '', lastStatus = null;
+
+async function deriveKey(pw, env) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(env.salt), iterations: env.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, true, ['decrypt']);
+}
+async function decrypt(key, env) {
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(env.iv) }, key, b64(env.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+async function storedKey() {
+  const raw = store.get(KEY_STORE);
+  if (!raw) return null;
+  try { return await crypto.subtle.importKey('raw', b64(raw), 'AES-GCM', false, ['decrypt']); } catch { return null; }
+}
+
+async function load() {
+  const r = await fetch('dados.json?t=' + Date.now(), { cache: 'no-store' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  envelope = await r.json();
+  try { lastStatus = await (await fetch('status.json?t=' + Date.now(), { cache: 'no-store' })).json(); } catch { lastStatus = null; }
+  const key = await storedKey();
+  if (key) {
+    try { data = await decrypt(key, envelope); showApp(); return; }
+    catch { store.del(KEY_STORE); } // senha trocada: pede de novo
+  }
+  showLock();
+}
+
+function showLock(msg = '') {
+  $('#app').hidden = true; $('#lock').hidden = false; $('#lock-err').textContent = msg;
+  setTimeout(() => $('#pw').focus(), 50);
+}
+$('#lock-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('#lock-err').textContent = 'Abrindo…'; $('#lock-err').className = 'err wait';
+  try {
+    const key = await deriveKey($('#pw').value, envelope);
+    data = await decrypt(key, envelope);
+    store.set(KEY_STORE, toB64(new Uint8Array(await crypto.subtle.exportKey('raw', key))));
+    $('#pw').value = '';
+    showApp();
+  } catch { $('#lock-err').textContent = 'Senha incorreta.'; $('#lock-err').className = 'err'; }
+});
+$('#forget').addEventListener('click', () => { store.del(KEY_STORE); data = null; showLock(); });
+$('#reload').addEventListener('click', () => { $('#reload').textContent = '…'; load().catch(err).finally(() => { $('#reload').textContent = '↻'; }); });
+function err(e) { document.body.innerHTML = `<p class="empty">Não foi possível carregar os dados (${F.esc(e.message)}). Tente de novo em alguns minutos.</p>`; }
+
+// ------------------------------------------------------------------ tela
+const TABS = [
+  ['todos', 'Todos', () => true], ['acao', 'Ações', c => c === 'acao'], ['fii', 'FIIs e fundos', c => c === 'fii' || c === 'fundo'],
+  ['bdr', 'BDRs', c => c === 'bdr'], ['etf', 'ETFs', c => c === 'etf'], ['futuro', 'Futuros', c => c === 'futuro'], ['cripto', 'Cripto', c => c === 'cripto'], ['outros', 'Outros', c => c === 'outro'],
+];
+const CLASS_LABEL = { acao: 'Ação', fii: 'FII', bdr: 'BDR', etf: 'ETF', fundo: 'Fundo', futuro: 'Futuro', cripto: 'Cripto', outro: 'Outro' };
+const CLASS_GROUP = { acao: 'Ações', fii: 'FIIs e fundos', fundo: 'FIIs e fundos', bdr: 'BDRs', etf: 'ETFs', futuro: 'Futuros', cripto: 'Cripto', outro: 'Outros' };
+const CLASS_ORDER = { acao: 1, fii: 2, fundo: 3, bdr: 4, etf: 5, futuro: 6, cripto: 7, outro: 8 };
+const cryptoDec = p => p >= 100 ? 2 : p >= 1 ? 4 : p >= 0.01 ? 6 : 8;
+const priceTxt = r => r.price == null ? F.DASH
+  : r.cls === 'futuro' ? `${F.num(r.price, r.dec ?? 2)} pts`
+  : r.cls === 'cripto' ? `${r.t.endsWith('-BRL') ? 'R$' : 'US$'} ${F.num(r.price, cryptoDec(r.price))}`
+  : F.num(r.price, 2);
+const NO_CLASS = C.NO_CLASS;
+const STRIP = [['IBOV', 'Ibovespa', 0], ['IFIX', 'IFIX', 0], ['USD', 'Dólar', 4], ['SPX', 'S&P 500', 0]];
+const SRC = { 'Status Invest': 'Status Invest', 'TradingView': 'TradingView', 'Proventos Yahoo': 'proventos do Yahoo' };
+const label = r => r.cls === 'fundo' ? (r.kind || 'Fundo') : CLASS_LABEL[r.cls];
+const cls = v => v == null ? '' : F.signOf(v * 100, 2) > 0 ? 'up' : F.signOf(v * 100, 2) < 0 ? 'down' : '';
+const perLabel = k => C.PERIODS.find(p => p.key === k)?.label || k;
+
+// mesma regra do PC (calc.groupName): setores B3 com as subdivisões pedidas, FIIs por segmento, ETFs RF/RV
+const groupOf = (r, level) => C.groupName({ t: r.t, cls: r.cls, name: r.name, tvName: r.tvName, sec: r.sec, sub: r.sub, seg: r.seg }, level);
+
+function showApp() {
+  $('#lock').hidden = true; $('#app').hidden = false;
+  $('#mode').value = pref.mode; $('#group').value = pref.group;
+  render();
+}
+
+function render() {
+  const d = data;
+  // quando
+  const age = Date.now() - d.at;
+  const { wd, minutes } = C.brClock(Date.now());
+  const trading = wd >= 1 && wd <= 5 && minutes >= 10 * 60 && minutes <= 18 * 60 + 40;
+  $('#when').innerHTML = `Dados de <b>${F.dateTime(d.at)}</b> (${F.ago(d.at)}) · pregão ${d.mkt === 'aberto' ? 'aberto' : 'fechado'} na geração`;
+  const banners = [];
+  if (trading && age > 40 * 60_000 && !(lastStatus?.ok === false)) banners.push(`A última atualização foi há mais de 40 min: o agendador do GitHub às vezes atrasa ou pula rodadas. Os números abaixo são de ${F.time(d.at)}.`);
+  if (d.siSrc === 'retrato' && d.siAt && Date.now() - d.siAt > 45 * 864e5) banners.push(`O retrato do Status Invest (setores e múltiplos) é de ${F.date(C.brDate(d.siAt))}. Exporte um diagnóstico no PC para atualizar.`);
+  if (!d.siSrc) banners.push('Sem dados do Status Invest: ações sem classificação B3 e múltiplos do TradingView.');
+  if (lastStatus?.entrada?.ok === false) banners.push(`${F.esc(lastStatus.entrada.msg)}. O celular segue com a última lista que abriu; acerte a senha no botão "Celular" da extensão.`);
+  const stAt = lastStatus?.at ? Date.parse(lastStatus.at) : null;
+  if (lastStatus && lastStatus.ok === false && stAt > d.at + 60_000) banners.push(`A última tentativa de atualizar (${F.time(stAt)}) falhou: ${F.esc(lastStatus.error || 'motivo desconhecido')}. Os números abaixo são de ${F.time(d.at)}; a próxima tentativa é em até 15 min.`);
+  $('#banner').innerHTML = banners.map(b => `<div class="banner">${b}</div>`).join('');
+  // faixa
+  $('#strip').innerHTML = STRIP.map(([k, n, dec]) => {
+    const m = d.strip[k];
+    const chg = m?.changePct != null ? m.changePct / 100 : null;
+    return `<div><span>${n}</span>${m?.price != null ? F.num(m.price, dec) : F.DASH} <b class="${cls(chg)}">${F.pct(chg)}</b></div>`;
+  }).join('');
+  // abas
+  $('#tabs').innerHTML = TABS.map(([k, n, m]) => {
+    const c = d.rows.filter(r => m(r.cls)).length;
+    return (k === 'todos' || c) ? `<button class="chip" role="tab" data-tab="${k}" aria-pressed="${pref.tab === k}">${n}<small>${c}</small></button>` : '';
+  }).join('');
+  $('#periods').innerHTML = C.PERIODS.filter(p => p.key !== 'dia').map(p => `<button class="chip" data-per="${p.key}" aria-pressed="${pref.per === p.key}">${p.label}</button>`).join('');
+  $('#col-per').textContent = perLabel(pref.per);
+  $('#snap-date').textContent = (d.siSrc === 'retrato' && d.siAt ? `de ${F.dateTime(d.siAt)}` : d.siSrc === 'ao vivo' ? '(ao vivo)' : '(indisponível)')
+    + (d.entradaAt ? `; lista sincronizada do PC em ${F.dateTime(d.entradaAt)}` : '; lista fixa (sincronização do PC não configurada)');
+  renderList();
+}
+
+function renderList() {
+  const tab = TABS.find(t => t[0] === pref.tab) || TABS[0];
+  const f = filter.trim().toUpperCase();
+  const rows = data.rows.filter(r => tab[2](r.cls)).filter(r => !f || r.t.includes(f) || (r.name || '').toUpperCase().includes(f))
+    .sort((a, b) => a.t.localeCompare(b.t));
+  if (!rows.length) { $('#list').innerHTML = `<p class="empty">${data.rows.length ? 'Nada nesta aba com esse filtro.' : 'Lista vazia: os tickers ficam em mirror/lista.txt no repositório.'}</p>`; return; }
+  const all = pref.tab === 'todos';
+  let html = '';
+  if (pref.group === 'none') html = rows.map(item).join('');
+  else {
+    const groups = new Map();
+    for (const r of rows) {
+      const name = groupOf(r, pref.group);
+      const lbl = !all || name === CLASS_GROUP[r.cls] ? name : `${CLASS_GROUP[r.cls]} · ${name.replace(/^FII · /, '')}`;
+      const k = `${CLASS_ORDER[r.cls]}|${name === NO_CLASS ? 'zz' : 'a'}|${lbl}`;
+      if (!groups.has(k)) groups.set(k, { lbl, rows: [] });
+      groups.get(k).rows.push(r);
+    }
+    html = [...groups.keys()].sort((a, b) => a.localeCompare(b, 'pt-BR')).map(k => {
+      const g = groups.get(k);
+      return `<div class="g">${F.esc(g.lbl)}<span class="n">${g.rows.length}</span></div>` + g.rows.map(item).join('');
+    }).join('');
+  }
+  $('#list').innerHTML = html;
+}
+
+const jumpTxt = j => `${F.pct(j.to / j.from - 1, 0)} entre ${F.date(j.prevDate)} e ${F.date(j.date)}`;
+
+function item(r) {
+  const v = r.vars[pref.mode];
+  const dia = v.dia, per = v[pref.per];
+  const flags = [];
+  if (r.error) flags.push('<span class="fl err">!</span>');
+  if (r.noTrade) flags.push('<span class="fl">⏸</span>');
+  if (r.stale) flags.push('<span class="fl">⏱</span>');
+  if (r.checksFail.length) flags.push('<span class="fl">●</span>');
+  const jumpsAfter = (base, key) => ((key === 'ini' ? r.iniJumps : r.jumps) || []).filter(j => base && j.date > base);
+  const cell = (x, key) => x?.v == null ? `<span class="num muted">${F.DASH}</span>` : `<span class="num ${cls(x.v)}">${F.pct(x.v)}${x.tv ? '<span class="tvm">TV</span>' : x.roll24 ? '<span class="tvm">24h</span>' : ''}${jumpsAfter(x.base, key).length ? '<span class="fl">⚠</span>' : ''}</span>`;
+  return `<div class="item${open.has(r.t) ? ' open' : ''}" data-t="${r.t}">
+    <button class="r"><span><b>${r.t}</b><span class="tag">${label(r)}</span>${flags.join('')}<span class="nm">${F.esc(r.name || '')}</span></span>
+      <span class="num">${priceTxt(r)}</span>${cell(dia, 'dia')}${cell(per, pref.per)}</button>
+    <div class="det">${open.has(r.t) ? detail(r) : ''}</div></div>`;
+}
+
+function detail(r) {
+  const v = r.vars[pref.mode];
+  const vars = C.PERIODS.map(p => {
+    const x = v[p.key];
+    return `<div><span>${p.label}</span><b class="${cls(x?.v)}">${F.pct(x?.v)}</b><small>${x?.roll24 ? '24 h móveis' : x?.tv ? 'TradingView' : x?.base ? 'desde ' + F.dateShort(x.base) : F.esc(x?.why || '')}</small></div>`;
+  }).join('');
+  const mult = (k, n, isDy) => {
+    const m = r[k];
+    if (m?.v == null) return `<div><span>${n}</span><b class="muted">${F.DASH}</b><small>${(r.cls === 'etf' || r.cls === 'fundo' || r.cls === 'futuro' || r.cls === 'cripto' || r.cls === 'outro') ? 'não se aplica' : (r.cls === 'fii' && k === 'pl') ? 'não se aplica a FII' : 'sem dado'}</small></div>`;
+    const med = r.peers?.[k];
+    const rel = med != null ? (isDy ? F.pp(m.v - med) : F.pct(m.v / med - 1, 0)) : null;
+    // retrato do Status Invest: ações e FIIs levados ao preço atual; BDRs como no retrato
+    const snap = data.siSrc === 'retrato' && m.src === 'Status Invest';
+    const srcTxt = snap ? `Status Invest, retrato de ${F.dateShort(C.brDate(data.siAt))}${r.cls === 'bdr' ? '' : ' no preço atual'}` : `${SRC[m.src] || m.src}${m.staleAt ? ` de ${F.dateShort(C.brDate(m.staleAt))}` : ''}`;
+    const mark = m.staleAt && !(snap && r.cls !== 'bdr');
+    return `<div><span>${n}</span><b>${isDy ? F.pctAbs(m.v) : F.mult(m.v)}</b>${mark ? '<span class="fl">⏱</span>' : ''}<small>${srcTxt}${med != null ? ` · setor ${isDy ? F.pctAbs(med, 1) : F.mult(med)} (${rel})` : ''}</small></div>`;
+  };
+  const notes = [];
+  if (r.qtime) notes.push(r.vars.price.d5?.tv ? `Cotação do TradingView consultada ${F.dateTime(r.qtime)} (pode ter atraso).` : `Cotação de ${F.dateTime(r.qtime)} (Yahoo, ~15 min de atraso).`);
+  if (r.cls === 'cripto') notes.push(`Dia = 24 h móveis (agora contra 24 h atrás). Os demais períodos são fechamento contra fechamento, com o dia fechando às 21h de Brasília (meia-noite UTC)${r.t.endsWith('-BRL') ? '. Em reais: cotação em dólar × dólar do mesmo dia (inclui a variação do câmbio)' : ''}.`);
+  if (r.vars.price.d5?.tv) notes.push('<span class="w">TV: variações da série contínua do TradingView, com base na abertura do pregão inicial do período (convenção dele), e não fechamento contra fechamento. O Yahoo não tem o futuro de Ibovespa.</span>');
+  if (r.noTrade) notes.push(`<span class="w">⏸ Sem negócio no pregão atual: preço do último negócio (${F.date(r.lastDate)}); Dia = 0%.</span>`);
+  if (r.error) notes.push(`<span class="w">! A última busca deste ativo falhou: ${F.esc(r.error)}. Valores do dado anterior.</span>`);
+  for (const c of r.checksFail) notes.push(`<span class="w">● ${c.metric}: fontes divergem — ${F.esc(c.base[0])} ${c.metric === 'DY' ? F.pctAbs(c.base[1]) : F.num(c.base[1], 2)} vs ${c.alt.map(([s, x]) => `${F.esc(s)} ${c.metric === 'DY' ? F.pctAbs(x) : F.num(x, 2)}`).join(', ')} (tolerância ${c.tol}).</span>`);
+  const jumps = [...new Set([...(r.jumps || []), ...(r.iniJumps || [])].map(jumpTxt))];
+  if (jumps.length) notes.push(`<span class="w">⚠ Salto atípico no histórico do Yahoo sem desdobramento registrado (${jumps.join('; ')}). Variações com base anterior podem estar distorcidas.</span>`);
+  if (r.peers) notes.push(`Setor: mediana do ${r.peers.levelLabel} "${F.esc(r.peers.name)}" (${r.peers.n} empresas${data.siSrc === 'retrato' ? `, retrato de ${F.date(C.brDate(data.siAt))}` : ''}).`);
+  if (r.sec || r.seg) notes.push(`Classificação B3: ${[r.sec, r.sub, r.seg].filter((x, i, a) => x && a.indexOf(x) === i).map(F.esc).join(' › ')}.`);
+  notes.push(pref.mode === 'tr' ? 'Retorno total: proventos reinvestidos na data ex.' : 'Variação de preço, fechamento contra fechamento (ajustada por desdobramentos e bonificações).');
+  return `<div class="vars">${vars}</div>
+    <div class="mults">${mult('pl', 'P/L')}${mult('pvp', 'P/VP')}${mult('dy', 'DY 12m', true)}</div>
+    <ul class="notes">${notes.map(n => `<li>${n}</li>`).join('')}</ul>`;
+}
+
+// ------------------------------------------------------------------ eventos
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (!b) return; pref.tab = b.dataset.tab; savePref(); render(); });
+$('#periods').addEventListener('click', e => { const b = e.target.closest('[data-per]'); if (!b) return; pref.per = b.dataset.per; savePref(); render(); });
+$('#mode').addEventListener('change', e => { pref.mode = e.target.value; savePref(); renderList(); });
+$('#group').addEventListener('change', e => { pref.group = e.target.value; savePref(); renderList(); });
+$('#filter').addEventListener('input', e => { filter = e.target.value; renderList(); });
+$('#list').addEventListener('click', e => {
+  const it = e.target.closest('.item'); if (!it || !e.target.closest('.r')) return;
+  const t = it.dataset.t;
+  if (open.has(t)) open.delete(t); else open.add(t);
+  const r = data.rows.find(x => x.t === t);
+  it.outerHTML = item(r);
+});
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data && Date.now() - data.at > 25 * 60_000) load().catch(() => {}); });
+
+load().catch(err);
+</script>
+</body>
+</html>
